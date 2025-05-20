@@ -1,3 +1,4 @@
+
 spring:
   application:
     name: CART-SERVICE
@@ -36,4 +37,6 @@ logging:
     ru.projects.product_service: DEBUG
 
 jwt:
-  secret: ${JWT_SECRET:"nTDmGYqtvLfDCptgzwG+xKGtXV/JHL4fHKJrxK9tHdI="}
+  secret: ${JWT_SECRET:nTDmGYqtvLfDCptgzwG+xKGtXV/JHL4fHKJrxK9tHdI=}
+server:
+  port: 8083

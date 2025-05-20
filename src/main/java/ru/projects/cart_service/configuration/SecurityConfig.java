@@ -2,7 +2,6 @@ package ru.projects.cart_service.configuration;
 
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
-import org.springframework.http.HttpMethod;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
 import org.springframework.security.config.annotation.web.configurers.CsrfConfigurer;
@@ -22,10 +21,9 @@ public class SecurityConfig {
     ) throws Exception {
         http.csrf(CsrfConfigurer::disable)
                 .authorizeHttpRequests(authorizeRequests -> authorizeRequests
-                        .requestMatchers(HttpMethod.POST).authenticated()
-                        .requestMatchers(HttpMethod.PUT).authenticated()
-                        .requestMatchers(HttpMethod.DELETE).authenticated()
-                        .requestMatchers(HttpMethod.GET).permitAll()
+                        .requestMatchers("/api/cart/validate").permitAll()
+                        .requestMatchers("/api/cart/add", "/api/cart/subtract", "/api/cart/clear", "/api/cart", "/api/cart/merge").authenticated()
+                        .anyRequest().permitAll()
                 )
                 .addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class)
                 .sessionManagement(sessionManagement -> sessionManagement.sessionCreationPolicy(SessionCreationPolicy.STATELESS));

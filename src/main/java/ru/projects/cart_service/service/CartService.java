@@ -4,12 +4,12 @@ import feign.FeignException;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
-import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.stereotype.Service;
 import ru.projects.cart_service.dto.CartDto;
 import ru.projects.cart_service.dto.CartItemDto;
 import ru.projects.cart_service.dto.ProductVariationDto;
 import ru.projects.cart_service.dto.ValidatedCartItemDto;
+import ru.projects.cart_service.exception.CartItemNotFoundException;
 import ru.projects.cart_service.exception.ExternalServiceException;
 import ru.projects.cart_service.mapper.CartMapper;
 import ru.projects.cart_service.mapper.VariationMapper;
@@ -17,8 +17,8 @@ import ru.projects.cart_service.model.Cart;
 import ru.projects.cart_service.model.CartItem;
 import ru.projects.cart_service.repository.CartRepository;
 
-import java.util.List;
 import java.util.Set;
+import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
@@ -28,38 +28,94 @@ public class CartService {
     private final VariationMapper variationMapper;
     private final CartMapper cartMapper;
 
-    public List<ValidatedCartItemDto> validateCartItems(CartDto cartDto) {
-        List<Long> variationIds = cartDto.cartItems().stream()
+    public Set<ValidatedCartItemDto> validateCartItems(CartDto cartDto) {
+        Set<Long> variationIds = cartDto.cartItems().stream()
                 .map(CartItemDto::productVariationId)
-                .toList();
+                .collect(Collectors.toSet());
 
-        List<ProductVariationDto> variations;
+        Set<ProductVariationDto> variations;
         try {
-            variations = productServiceClient.getVariationsByIds(variationIds);
+            variations = productServiceClient.getVariationsByIds(variationIds).getBody();
         } catch (FeignException e) {
             throw new ExternalServiceException("Failed to retrieve product data");
         }
-
-        return variationMapper.toValidatedCartItemDtoList(variations);
+        if (variations == null || variations.isEmpty()) {
+            return Set.of();
+        }
+        return variationMapper.toValidatedCartItemDtoSetFromCartItemDtos(variations, cartDto.cartItems());
     }
 
-    public List<ValidatedCartItemDto> getCartItems() {
+    public Set<ValidatedCartItemDto> getCartItems() {
         Cart cart = findCartByAuthorizedUser();
-        return validateCartItems(cartMapper.toCartDto(cart));
+        Set<Long> variationIds = cart.getItems().stream()
+                .map(CartItem::getProductVariationId)
+                .collect(Collectors.toSet());
+        Set<ProductVariationDto> variations;
+        try {
+            variations = productServiceClient.getVariationsByIds(variationIds).getBody();
+        } catch (FeignException e) {
+            throw new ExternalServiceException("Failed to retrieve product data");
+        }
+        if (variations == null || variations.isEmpty()) {
+            return Set.of();
+        }
+        if (variations.size() != variationIds.size()) {
+            Set<CartItem> itemsToRemove = cart.getItems().stream().filter(cartItem ->
+                    !variations.stream()
+                    .map(ProductVariationDto::id)
+                    .collect(Collectors.toSet()
+                    ).contains(cartItem.getId())
+            ).collect(Collectors.toSet());
+            cart.removeCartItems(itemsToRemove);
+            cartRepository.save(cart);
+        }
+        return variationMapper.toValidatedCartItemDtoSetFromCartItems(variations, cart.getItems());
     }
 
-    public List<ValidatedCartItemDto> mergeCarts(CartDto cartDto) {
+    public void mergeCarts(CartDto cartDto) {
         Cart cart = findCartByAuthorizedUser();
         Set<CartItem> cartItems = cartMapper.toCartItemSet(cartDto.cartItems());
         cart.addCartItems(cartItems);
         cartRepository.save(cart);
-        return validateCartItems(cartMapper.toCartDto(cart));
+    }
+
+    public void addCartItem(Long productVariationId) {
+        Cart cart = findCartByAuthorizedUser();
+        CartItem cartItem = cart.getItems().stream().filter(item -> item.getProductVariationId().equals(productVariationId)).findFirst().orElse(null);
+        if (cartItem != null) {
+            cartItem.setQuantity(cartItem.getQuantity() + 1);
+        } else {
+            cartItem = new CartItem();
+            cartItem.setProductVariationId(productVariationId);
+            cartItem.setQuantity(1);
+        }
+        cart.addCartItem(cartItem);
+        cartRepository.save(cart);
+    }
+
+    public void subtractCartItem(Long productVariationId) {
+        Cart cart = findCartByAuthorizedUser();
+        CartItem cartItem = cart.getItems().stream().filter(item -> item.getProductVariationId().equals(productVariationId)).findFirst().orElseThrow(
+                () -> new CartItemNotFoundException("CartItem with id " + productVariationId + " not found")
+        );
+        if (cartItem.getQuantity() == 1) {
+            cart.removeCartItem(cartItem);
+        } else {
+            cartItem.setQuantity(cartItem.getQuantity() - 1);
+            cart.addCartItem(cartItem);
+        }
+        cartRepository.save(cart);
+    }
+
+    public void clearCart() {
+        Cart cart = findCartByAuthorizedUser();
+        cart.removeAllCartItems();
+        cartRepository.save(cart);
     }
 
     private Cart findCartByAuthorizedUser() {
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
-        UserDetails userDetails = (UserDetails) authentication.getPrincipal();
-        Long userId =Long.parseLong(userDetails.getUsername());
-        return cartRepository.findByUserId(userId).orElse(new Cart(userId));
+        Long userId = (Long) authentication.getPrincipal();
+        return cartRepository.findById(userId).orElse(new Cart(userId));
     }
 }

@@ -7,7 +7,6 @@ import ru.projects.cart_service.dto.CartItemDto;
 import ru.projects.cart_service.model.Cart;
 import ru.projects.cart_service.model.CartItem;
 
-import java.util.List;
 import java.util.Set;
 
 @Mapper(componentModel = "spring")
@@ -17,5 +16,5 @@ public interface CartMapper {
     @Mapping(target = "id", ignore = true)
     @Mapping(target = "cart", ignore = true)
     CartItem toCartItem(CartItemDto cartItemDto);
-    Set<CartItem> toCartItemSet(List<CartItemDto> cartItemDtoList);
+    Set<CartItem> toCartItemSet(Set<CartItemDto> cartItemDtoList);
 }

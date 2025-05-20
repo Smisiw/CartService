@@ -11,11 +11,14 @@ import lombok.ToString;
 @Setter
 @ToString(exclude = "cart")
 @EqualsAndHashCode(exclude = "cart")
+@Table(
+        uniqueConstraints = @UniqueConstraint(columnNames = {"cart_id", "product_variation_id"})
+)
 public class CartItem {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
-    @Column(nullable = false)
+    @Column(nullable = false, name = "product_variation_id")
     private Long productVariationId;
     @Column(nullable = false)
     private int quantity;
