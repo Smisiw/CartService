@@ -2,6 +2,7 @@ package ru.projects.cart_service.controller;
 
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 import ru.projects.cart_service.dto.CartDto;
 import ru.projects.cart_service.dto.CartItemRequestDto;
@@ -22,31 +23,31 @@ public class CartController {
     }
 
     @GetMapping
-    public ResponseEntity<Set<ValidatedCartItemDto>> getCart() {
-        return ResponseEntity.ok(cartService.getCartItems());
+    public ResponseEntity<Set<ValidatedCartItemDto>> getCart(@AuthenticationPrincipal Long userId) {
+        return ResponseEntity.ok(cartService.getCartItems(userId));
     }
 
     @PostMapping("/merge")
-    public ResponseEntity<String> mergeCart(@RequestBody CartDto cartDto) {
-        cartService.mergeCarts(cartDto);
+    public ResponseEntity<String> mergeCart(@RequestBody CartDto cartDto, @AuthenticationPrincipal Long userId) {
+        cartService.mergeCarts(cartDto, userId);
         return ResponseEntity.ok("Carts successfully merged");
     }
 
     @PostMapping("/add")
-    public ResponseEntity<String> addCartItem(@RequestBody CartItemRequestDto cartItemRequestDto) {
-        cartService.addCartItem(cartItemRequestDto.productVariationId());
+    public ResponseEntity<String> addCartItem(@RequestBody CartItemRequestDto cartItemRequestDto, @AuthenticationPrincipal Long userId) {
+        cartService.addCartItem(cartItemRequestDto.productVariationId(), userId);
         return ResponseEntity.ok("Item successfully added to the cart");
     }
 
     @PostMapping("/subtract")
-    public ResponseEntity<String> subCartItem(@RequestBody CartItemRequestDto cartItemRequestDto) {
-        cartService.subtractCartItem(cartItemRequestDto.productVariationId());
+    public ResponseEntity<String> subCartItem(@RequestBody CartItemRequestDto cartItemRequestDto, @AuthenticationPrincipal Long userId) {
+        cartService.subtractCartItem(cartItemRequestDto.productVariationId(), userId);
         return ResponseEntity.ok("Item successfully subtracted from the cart");
     }
 
     @PostMapping("/clear")
-    public ResponseEntity<String> clearCart() {
-        cartService.clearCart();
+    public ResponseEntity<String> clearCart(@AuthenticationPrincipal Long userId) {
+        cartService.clearCart(userId);
         return ResponseEntity.ok("Cart cleared");
     }
 

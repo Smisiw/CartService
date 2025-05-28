@@ -2,8 +2,6 @@ package ru.projects.cart_service.service;
 
 import feign.FeignException;
 import lombok.RequiredArgsConstructor;
-import org.springframework.security.core.Authentication;
-import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 import ru.projects.cart_service.dto.CartDto;
 import ru.projects.cart_service.dto.CartItemDto;
@@ -45,8 +43,8 @@ public class CartService {
         return variationMapper.toValidatedCartItemDtoSetFromCartItemDtos(variations, cartDto.cartItems());
     }
 
-    public Set<ValidatedCartItemDto> getCartItems() {
-        Cart cart = findCartByAuthorizedUser();
+    public Set<ValidatedCartItemDto> getCartItems(Long userId) {
+        Cart cart = cartRepository.findById(userId).orElse(new Cart(userId));
         Set<Long> variationIds = cart.getItems().stream()
                 .map(CartItem::getProductVariationId)
                 .collect(Collectors.toSet());
@@ -72,15 +70,15 @@ public class CartService {
         return variationMapper.toValidatedCartItemDtoSetFromCartItems(variations, cart.getItems());
     }
 
-    public void mergeCarts(CartDto cartDto) {
-        Cart cart = findCartByAuthorizedUser();
+    public void mergeCarts(CartDto cartDto, Long userId) {
+        Cart cart = cartRepository.findById(userId).orElse(new Cart(userId));
         Set<CartItem> cartItems = cartMapper.toCartItemSet(cartDto.cartItems());
         cart.addCartItems(cartItems);
         cartRepository.save(cart);
     }
 
-    public void addCartItem(Long productVariationId) {
-        Cart cart = findCartByAuthorizedUser();
+    public void addCartItem(Long productVariationId, Long userId) {
+        Cart cart = cartRepository.findById(userId).orElse(new Cart(userId));
         CartItem cartItem = cart.getItems().stream().filter(item -> item.getProductVariationId().equals(productVariationId)).findFirst().orElse(null);
         if (cartItem != null) {
             cartItem.setQuantity(cartItem.getQuantity() + 1);
@@ -93,8 +91,8 @@ public class CartService {
         cartRepository.save(cart);
     }
 
-    public void subtractCartItem(Long productVariationId) {
-        Cart cart = findCartByAuthorizedUser();
+    public void subtractCartItem(Long productVariationId, Long userId) {
+        Cart cart = cartRepository.findById(userId).orElse(new Cart(userId));
         CartItem cartItem = cart.getItems().stream().filter(item -> item.getProductVariationId().equals(productVariationId)).findFirst().orElseThrow(
                 () -> new CartItemNotFoundException("CartItem with id " + productVariationId + " not found")
         );
@@ -107,15 +105,21 @@ public class CartService {
         cartRepository.save(cart);
     }
 
-    public void clearCart() {
-        Cart cart = findCartByAuthorizedUser();
-        cart.removeAllCartItems();
+    public void removeCartItem(Long productVariationId, Long userId) {
+        Cart cart = cartRepository.findById(userId).orElse(new Cart(userId));
+        cart.getItems().removeIf(item -> item.getProductVariationId().equals(productVariationId));
         cartRepository.save(cart);
     }
 
-    private Cart findCartByAuthorizedUser() {
-        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
-        Long userId = (Long) authentication.getPrincipal();
-        return cartRepository.findById(userId).orElse(new Cart(userId));
+    public void removeCartItems(Set<Long> cartItemIds, Long userId) {
+        Cart cart = cartRepository.findById(userId).orElse(new Cart(userId));
+        cart.getItems().removeIf(item -> cartItemIds.contains(item.getProductVariationId()));
+        cartRepository.save(cart);
+    }
+
+    public void clearCart(Long userId) {
+        Cart cart = cartRepository.findById(userId).orElse(new Cart(userId));
+        cart.removeAllCartItems();
+        cartRepository.save(cart);
     }
 }
