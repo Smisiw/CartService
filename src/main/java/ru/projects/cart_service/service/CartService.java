@@ -16,6 +16,7 @@ import ru.projects.cart_service.model.CartItem;
 import ru.projects.cart_service.repository.CartRepository;
 
 import java.util.Set;
+import java.util.UUID;
 import java.util.stream.Collectors;
 
 @Service
@@ -27,7 +28,7 @@ public class CartService {
     private final CartMapper cartMapper;
 
     public Set<ValidatedCartItemDto> validateCartItems(CartDto cartDto) {
-        Set<Long> variationIds = cartDto.cartItems().stream()
+        Set<UUID> variationIds = cartDto.cartItems().stream()
                 .map(CartItemDto::productVariationId)
                 .collect(Collectors.toSet());
 
@@ -43,9 +44,9 @@ public class CartService {
         return variationMapper.toValidatedCartItemDtoSetFromCartItemDtos(variations, cartDto.cartItems());
     }
 
-    public Set<ValidatedCartItemDto> getCartItems(Long userId) {
+    public Set<ValidatedCartItemDto> getCartItems(UUID userId) {
         Cart cart = cartRepository.findById(userId).orElse(new Cart(userId));
-        Set<Long> variationIds = cart.getItems().stream()
+        Set<UUID> variationIds = cart.getItems().stream()
                 .map(CartItem::getProductVariationId)
                 .collect(Collectors.toSet());
         Set<ProductVariationDto> variations;
@@ -70,14 +71,14 @@ public class CartService {
         return variationMapper.toValidatedCartItemDtoSetFromCartItems(variations, cart.getItems());
     }
 
-    public void mergeCarts(CartDto cartDto, Long userId) {
+    public void mergeCarts(CartDto cartDto, UUID userId) {
         Cart cart = cartRepository.findById(userId).orElse(new Cart(userId));
         Set<CartItem> cartItems = cartMapper.toCartItemSet(cartDto.cartItems());
         cart.addCartItems(cartItems);
         cartRepository.save(cart);
     }
 
-    public void addCartItem(Long productVariationId, Long userId) {
+    public void addCartItem(UUID productVariationId, UUID userId) {
         Cart cart = cartRepository.findById(userId).orElse(new Cart(userId));
         CartItem cartItem = cart.getItems().stream().filter(item -> item.getProductVariationId().equals(productVariationId)).findFirst().orElse(null);
         if (cartItem != null) {
@@ -91,7 +92,7 @@ public class CartService {
         cartRepository.save(cart);
     }
 
-    public void subtractCartItem(Long productVariationId, Long userId) {
+    public void subtractCartItem(UUID productVariationId, UUID userId) {
         Cart cart = cartRepository.findById(userId).orElse(new Cart(userId));
         CartItem cartItem = cart.getItems().stream().filter(item -> item.getProductVariationId().equals(productVariationId)).findFirst().orElseThrow(
                 () -> new CartItemNotFoundException("CartItem with id " + productVariationId + " not found")
@@ -105,19 +106,13 @@ public class CartService {
         cartRepository.save(cart);
     }
 
-    public void removeCartItem(Long productVariationId, Long userId) {
-        Cart cart = cartRepository.findById(userId).orElse(new Cart(userId));
-        cart.getItems().removeIf(item -> item.getProductVariationId().equals(productVariationId));
-        cartRepository.save(cart);
-    }
-
-    public void removeCartItems(Set<Long> cartItemIds, Long userId) {
+    public void removeCartItems(Set<UUID> cartItemIds, UUID userId) {
         Cart cart = cartRepository.findById(userId).orElse(new Cart(userId));
         cart.getItems().removeIf(item -> cartItemIds.contains(item.getProductVariationId()));
         cartRepository.save(cart);
     }
 
-    public void clearCart(Long userId) {
+    public void clearCart(UUID userId) {
         Cart cart = cartRepository.findById(userId).orElse(new Cart(userId));
         cart.removeAllCartItems();
         cartRepository.save(cart);

@@ -5,6 +5,7 @@ import lombok.*;
 
 import java.util.HashSet;
 import java.util.Set;
+import java.util.UUID;
 
 @Entity
 @Getter
@@ -14,11 +15,11 @@ import java.util.Set;
 @NoArgsConstructor
 public class Cart {
     @Id
-    private Long userId;
+    private UUID userId;
     @OneToMany(mappedBy = "cart", cascade = CascadeType.ALL, orphanRemoval = true, fetch = FetchType.EAGER)
     private Set<CartItem> items = new HashSet<>();
 
-    public Cart(Long userId) {
+    public Cart(UUID userId) {
         this.userId = userId;
     }
 
