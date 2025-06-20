@@ -6,6 +6,8 @@ import lombok.Getter;
 import lombok.Setter;
 import lombok.ToString;
 
+import java.util.UUID;
+
 @Entity
 @Getter
 @Setter
@@ -16,10 +18,10 @@ import lombok.ToString;
 )
 public class CartItem {
     @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Long id;
+    @GeneratedValue
+    private UUID id;
     @Column(nullable = false, name = "product_variation_id")
-    private Long productVariationId;
+    private UUID productVariationId;
     @Column(nullable = false)
     private int quantity;
     @ManyToOne

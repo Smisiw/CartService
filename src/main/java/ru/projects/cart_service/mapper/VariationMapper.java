@@ -10,6 +10,7 @@ import ru.projects.cart_service.model.CartItem;
 
 import java.util.Map;
 import java.util.Set;
+import java.util.UUID;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
@@ -25,7 +26,7 @@ public interface VariationMapper {
     @Mapping(target = "id", source = "productVariationDto.id")
     ValidatedCartItemDto toValidatedCartItemDto(ProductVariationDto productVariationDto, CartItemDto cartItemDto);
     default Set<ValidatedCartItemDto> toValidatedCartItemDtoSetFromCartItems(Set<ProductVariationDto> productVariationDtos, Set<CartItem> cartItems) {
-        Map<Long, CartItem> itemMap = cartItems.stream()
+        Map<UUID, CartItem> itemMap = cartItems.stream()
                 .collect(Collectors.toMap(CartItem::getProductVariationId, Function.identity()));
         return productVariationDtos.stream()
                 .map(productVariationDto -> {
@@ -38,7 +39,7 @@ public interface VariationMapper {
                 .collect(Collectors.toSet());
     }
     default Set<ValidatedCartItemDto> toValidatedCartItemDtoSetFromCartItemDtos(Set<ProductVariationDto> productVariationDtos, Set<CartItemDto> cartItemDtos) {
-        Map<Long, CartItemDto> itemMap = cartItemDtos.stream()
+        Map<UUID, CartItemDto> itemMap = cartItemDtos.stream()
                 .collect(Collectors.toMap(CartItemDto::productVariationId, Function.identity()));
         return productVariationDtos.stream()
                 .map(productVariationDto -> {

@@ -1,7 +1,9 @@
 package ru.projects.cart_service.dto;
 
+import java.util.UUID;
+
 public record CartItemDto(
-        Long productVariationId,
+        UUID productVariationId,
         int quantity
 ) {
 }

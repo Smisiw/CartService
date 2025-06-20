@@ -7,10 +7,11 @@ import org.springframework.web.bind.annotation.RequestBody;
 import ru.projects.cart_service.dto.ProductVariationDto;
 
 import java.util.Set;
+import java.util.UUID;
 
 @FeignClient(name = "PRODUCT-SERVICE", path = "/api/products")
 public interface ProductServiceClient {
 
     @PostMapping("/variationsByIds")
-    ResponseEntity<Set<ProductVariationDto>> getVariationsByIds(@RequestBody Set<Long> productIds);
+    ResponseEntity<Set<ProductVariationDto>> getVariationsByIds(@RequestBody Set<UUID> productIds);
 }

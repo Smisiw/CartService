@@ -2,18 +2,19 @@ package ru.projects.cart_service.dto;
 
 import java.math.BigDecimal;
 import java.util.Set;
+import java.util.UUID;
 
 public record OrderCreatedEvent(
-        Long orderId,
-        Long userId,
+        UUID orderId,
+        UUID userId,
         Set<Item> items,
         BigDecimal totalPrice,
         String paymentMethod,
         String deliveryAddress
 ) {
     public record Item(
-            Long id,
-            Long productVariationId,
+            UUID id,
+            UUID productVariationId,
             Integer quantity,
             BigDecimal unitPrice
     ) {}
