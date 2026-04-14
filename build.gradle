@@ -60,5 +60,6 @@ dependencyManagement {
 }
 
 tasks.named('test') {
+    jvmArgs '-XX:+EnableDynamicAgentLoading', '-Xshare:off'
     useJUnitPlatform()
 }
